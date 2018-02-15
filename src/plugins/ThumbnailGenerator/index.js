@@ -64,13 +64,13 @@ module.exports = class ThumbnailGenerator extends Plugin {
   protect (image) {
     // https://stackoverflow.com/questions/6081483/maximum-size-of-a-canvas-element
 
-    var ratio = image.width / image.height
+    const ratio = image.width / image.height
 
-    var maxSquare = 5000000  // ios max canvas square
-    var maxSize = 4096  // ie max canvas dimensions
+    const maxSquare = 5000000  // ios max canvas square
+    const maxSize = 4096  // ie max canvas dimensions
 
-    var maxW = Math.floor(Math.sqrt(maxSquare * ratio))
-    var maxH = Math.floor(maxSquare / Math.sqrt(maxSquare * ratio))
+    let maxW = Math.floor(Math.sqrt(maxSquare * ratio))
+    let maxH = Math.floor(maxSquare / Math.sqrt(maxSquare * ratio))
     if (maxW > maxSize) {
       maxW = maxSize
       maxH = Math.round(maxW / ratio)
@@ -79,18 +79,25 @@ module.exports = class ThumbnailGenerator extends Plugin {
       maxH = maxSize
       maxW = Math.round(ratio * maxH)
     }
-    if (image.width > maxW) {
-      var canvas = document.createElement('canvas')
+
+    const canvas = document.createElement('canvas')
+    if (image.width > maxW || image.height > maxH) {
       canvas.width = maxW
       canvas.height = maxH
       canvas.getContext('2d').drawImage(image, 0, 0, maxW, maxH)
-      image.src = 'about:blank'
-      image.width = 1
-      image.height = 1
-      image = canvas
+    } else {
+      // Draw to canvas even if the size is already good; this way we prevent
+      // GIFs from animating and images with transparency looking different from
+      // their resized versions.
+      canvas.width = image.width
+      canvas.height = image.height
+      canvas.getContext('2d').drawImage(image, 0, 0, image.width, image.height)
     }
 
-    return image
+    image.src = 'about:blank'
+    image.width = 1
+    image.height = 1
+    return canvas
   }
 
   /**
