@@ -31,6 +31,7 @@ module.exports = class Transloadit extends Plugin {
     }
 
     const defaultOptions = {
+      service: 'https://api2.transloadit.com',
       waitForEncoding: false,
       waitForMetadata: false,
       alwaysRunAssembly: false,
@@ -55,12 +56,15 @@ module.exports = class Transloadit extends Plugin {
     this.onFileUploadURLAvailable = this.onFileUploadURLAvailable.bind(this)
     this.onRestored = this.onRestored.bind(this)
     this.getPersistentData = this.getPersistentData.bind(this)
+    this.removeFileFromPluginState = this.removeFileFromPluginState.bind(this)
 
     if (this.opts.params) {
       this.validateParams(this.opts.params)
     }
 
-    this.client = new Client()
+    this.client = new Client({
+      service: this.opts.service
+    })
     this.sockets = {}
   }
 
@@ -294,6 +298,10 @@ module.exports = class Transloadit extends Plugin {
   onFileUploadComplete (assemblyId, uploadedFile) {
     const state = this.getPluginState()
     const file = this.findFile(uploadedFile)
+    if (!file) {
+      this.uppy.log('[Transloadit] Couldn’t file the file, it was likely removed in the process')
+      return
+    }
     this.setPluginState({
       files: Object.assign({}, state.files, {
         [uploadedFile.id]: {
@@ -761,6 +769,15 @@ module.exports = class Transloadit extends Plugin {
     })
   }
 
+  removeFileFromPluginState (fileID) {
+    const updatedFiles = this.getPluginState().files
+    delete updatedFiles[fileID]
+
+    this.setPluginState({
+      files: updatedFiles
+    })
+  }
+
   install () {
     this.uppy.addPreProcessor(this.prepareUpload)
     this.uppy.addPostProcessor(this.afterUpload)
@@ -781,6 +798,8 @@ module.exports = class Transloadit extends Plugin {
     this.uppy.on('restore:get-data', this.getPersistentData)
     this.uppy.on('restored', this.onRestored)
 
+    // this.uppy.on('file-removed', this.removeFileFromPluginState)
+
     this.setPluginState({
       // Contains assembly status objects, indexed by their ID.
       assemblies: {},
@@ -796,6 +815,8 @@ module.exports = class Transloadit extends Plugin {
   uninstall () {
     this.uppy.removePreProcessor(this.prepareUpload)
     this.uppy.removePostProcessor(this.afterUpload)
+
+    // this.uppy.off('file-removed', this.removeFileFromPluginState)
 
     if (this.opts.importFromUploadURLs) {
       this.uppy.off('upload-success', this.onFileUploadURLAvailable)
