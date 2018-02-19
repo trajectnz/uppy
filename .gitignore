@@ -5,8 +5,8 @@ env.sh
 node_modules
 
 # dist/
-# lib/
-# coverage/
+lib/
+coverage/
 
 website/db.json
 website/*.log
