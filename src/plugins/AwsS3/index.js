@@ -3,9 +3,10 @@ const Translator = require('../../core/Translator')
 const { limitPromises } = require('../../core/Utils')
 const XHRUpload = require('../XHRUpload')
 
-function isXml (xhr) {
-  const contentType = xhr.getResponseHeader('Content-Type')
-  return typeof contentType === 'string' && contentType.toLowerCase() === 'application/xml'
+function isXml (xhr) { // assumes transfer success and the file type not being XML
+  return false
+  // const contentType = xhr.getResponseHeader('Content-Type')
+  // return typeof contentType === 'string' && contentType.toLowerCase() === 'application/xml'
 }
 
 module.exports = class AwsS3 extends Plugin {
@@ -139,7 +140,8 @@ module.exports = class AwsS3 extends Plugin {
         // If no response, we've hopefully done a PUT request to the file
         // in the bucket on its full URL.
         if (!isXml(xhr)) {
-          return { location: xhr.responseURL }
+          // return { location: xhr.responseURL }
+          return xhr  // this and the changes to isXML (line 6) forces the UI to update on success
         }
         function getValue (key) {
           const el = xhr.responseXML.querySelector(key)
